@@ -5,6 +5,13 @@ Created on Wed Sep 29 15:31:59 2021
 @author: Maud
 """
 
+"""Remark: this isn't really an RW model: now the model chooses between rule 1 or rule 2 and implements that rule 
+   - this is like a higher order model, implementing the rule that has the higest probability (with a random factor as well)
+How to create an actual RW model (I think): 
+    - create weights for each stimulus - action pair 
+        --> 4 weights: stimA + L resp; stim A + R resp; stim B + L resp; stim B + R resp 
+    - depending on which stimulus is shown, then only 2 weights (values) are of importance """
+
 import numpy as np
 import pandas
 from psychopy import data , os
@@ -24,12 +31,13 @@ if not os.path.isdir(my_output_directory):
 output_file = 'Simulation'
 
 n_trials = design.shape[0]
-alpha = 0.1
+alpha = 0.01
 gamma = 1
-rew_per_trial = 1 #how much you gain on a rewarded trial 
+rew_per_trial = 10 #how much you gain on a rewarded trial 
 #important: values zijn voor de rules! Welke rule wil pp. uitvoeren 
 values = np.array([0.0, 0.0])
 prev_rule = 0
+total_reward = 0
 
 for trial in range(n_trials): 
     #define the variables you'll need for this trial (take them from the design_array)
@@ -44,11 +52,11 @@ for trial in range(n_trials):
     probabilities = softmax(current_values = values, temperature = gamma)
     # define which rule is chosen (based on the probabilities)
     choice = choose_option(prob = probabilities)
-    print("Choice (implemented rule) on this trial is {}".format(choice))
+    #print("Choice (implemented rule) on this trial is {}".format(choice))
     # rew_present contains whether there was reward present on this trial or not 
         # depends on whether the correct rule was implemented or not, doesn't depend on whether you answered left / right!
     rew_present = ((choice == rule and FBcon == 1) or (choice != rule and FBcon == 0))*1
-    print("Correct rule is {}, FBcongruency is {}, so reward present? {}".format(rule, FBcon, rew_present))
+    #print("Correct rule is {}, FBcongruency is {}, so reward present? {}".format(rule, FBcon, rew_present))
     rew_this_trial = rew_present * rew_per_trial
     PE, updated_value = rescorla_wagner(previous_value = values[choice], 
                                         obtained_rew = rew_this_trial, learning_rate = alpha)
@@ -67,34 +75,9 @@ for trial in range(n_trials):
     design[trial, 10:12] = values
     
     prev_rule = rule
+    total_reward = total_reward + rew_this_trial
     
-    
-    
-    print(values)
+print(total_reward)
 
 np.savetxt("Simulations.csv", design, delimiter = ',', fmt = "%f",
           header = 'Trial_number,Rule,Stimulus,Response,CorResp,FBcon,Expected value,PE_estimate,Response_likelihood,Module,Value_rule0,Value_rule1')
-    
-    
-    
-    
-    
-
-
-
-
-
-
-
-# thisExp = data.ExperimentHandler(dataFileName = my_output_directory + output_file)
-# DesignTL = pandas.DataFrame.to_dict(design_DF, orient = "records")
-# trials = data.TrialHandler(trialList = DesignTL, nReps = 1, method = "sequential")
-# thisExp.addLoop(trials)
-
-# for trial in trials: 
-#     print(type(trial['Trial_number']))    
-#     thisExp.nextEntry()
-
-# thisExp.saveAsWideText(my_output_directory + output_file + '.csv')
-    
-    
