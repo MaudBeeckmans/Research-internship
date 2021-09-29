@@ -5,10 +5,8 @@ Created on Wed Sep 29 15:31:59 2021
 @author: Maud
 """
 
-"""Remark: this isn't really an RW model: now the model chooses between rule 1 or rule 2 and implements that rule 
-   - this is like a higher order model, implementing the rule that has the higest probability (with a random factor as well)
-How to create an actual RW model (I think): 
-    - create weights for each stimulus - action pair 
+"""Update: RW-model with 4 weight / values 
+    - weights for each stimulus - action pair 
         --> 4 weights: stimA + L resp; stim A + R resp; stim B + L resp; stim B + R resp 
     - depending on which stimulus is shown, then only 2 weights (values) are of importance """
 
@@ -22,7 +20,7 @@ design_DF = pandas.read_csv(design_path + "Data" + str(0) + ".csv")
 design_DF.columns = ['Trial_number', 'Rule', 'Stimulus', 'Response', 'CorResp', 
                      'FBcon', 'Expected value','PE_estimate', 'Response_likelihood', 'Module']
 design = design_DF.to_numpy()
-design = np.column_stack([design, np.zeros([480, 2])])
+#design = np.column_stack([design, np.zeros([480, 2])])
 
 output_map = 'Simulations_trying_phase'
 my_output_directory = os.getcwd() + '/' + output_map
@@ -31,53 +29,59 @@ if not os.path.isdir(my_output_directory):
 output_file = 'Simulation'
 
 n_trials = design.shape[0]
-alpha = 0.01
+alpha = 0.5
 gamma = 1
 rew_per_trial = 10 #how much you gain on a rewarded trial 
 #important: values zijn voor de rules! Welke rule wil pp. uitvoeren 
-values = np.array([0.0, 0.0])
+n_actions = 2
+n_stim = 2
+values = np.random.uniform(size = (n_stim, n_actions))
 prev_rule = 0
 total_reward = 0
 
 for trial in range(n_trials): 
+    
     #define the variables you'll need for this trial (take them from the design_array)
     rule = design[trial, 1]
-    stimulus = design[trial, 2]
-    CorResp =  design[trial, 4]
+    stimulus = np.int(design[trial, 2])
+    CorResp =  np.int(design[trial, 4])
     FBcon = design[trial, 5]
-    if rule != prev_rule:
-        print("\n\n\nRule changed")
-    #print(trial, rule, stimulus, CorResp, FBcon)
-    # compute the probability of each rule to be chosen this trial
-    probabilities = softmax(current_values = values, temperature = gamma)
-    # define which rule is chosen (based on the probabilities)
-    choice = choose_option(prob = probabilities)
-    #print("Choice (implemented rule) on this trial is {}".format(choice))
-    # rew_present contains whether there was reward present on this trial or not 
-        # depends on whether the correct rule was implemented or not, doesn't depend on whether you answered left / right!
-    rew_present = ((choice == rule and FBcon == 1) or (choice != rule and FBcon == 0))*1
-    #print("Correct rule is {}, FBcongruency is {}, so reward present? {}".format(rule, FBcon, rew_present))
+    
+    if trial == 0 or rule != prev_rule:
+        print("\n\n\nRule changed; current rule is {}".format(rule))
+    
+    #define which weights are of importance on this trial (depending on which stimulus was shown)
+    stimulus_weights = values[stimulus, :]
+    # compute probability of each action on this trial (using the weights for each action with the stimulus of this trial)
+    action_probabilities = softmax(current_values = stimulus_weights, temperature = gamma)
+    # define which action is chosen (based on the probabilities)
+    chosen_action = choose_option(prob = action_probabilities)
+    #define whether reward was received this trial or not
+    rew_present = ((chosen_action == CorResp and FBcon == 1) or (chosen_action!= CorResp and FBcon == 0))*1
     rew_this_trial = rew_present * rew_per_trial
-    PE, updated_value = rescorla_wagner(previous_value = values[choice], 
+    #compute the PE and the updated value for this trial (and this stimulus-action pair)
+    PE, updated_value = rescorla_wagner(previous_value = values[stimulus, chosen_action], 
                                         obtained_rew = rew_this_trial, learning_rate = alpha)
+    
     #store the relevant variables in the array
+    #store the response given on this trial 
+    design[trial, 3] = chosen_action
     #first store the value for this trial before the value is updated
-    design[trial, 6] = values[choice]
+    design[trial, 6] = values[stimulus, chosen_action]
     #Store the PE on this trial (is related to the choice you made)
     design[trial, 7] = PE
-    #Store the probability for the chose that you made on this trial 
-    design[trial, 8] = probabilities[choice]
-    #store the module you implemented (the rule that you used)
-    design[trial, 9] = choice
+    #Store the probability for the choise that you made on this trial 
+    design[trial, 8] = action_probabilities[chosen_action]
     
-    values[choice] = updated_value
+    #update the value of the stimulus-action that was relevant this trial 
+    values[stimulus, chosen_action] = updated_value
     
-    design[trial, 10:12] = values
     
     prev_rule = rule
     total_reward = total_reward + rew_this_trial
+    print("Action = {}, Stimulus = {}; Rew = {}; updated values are {}".format(chosen_action, stimulus, rew_present, values))
     
 print(total_reward)
 
-np.savetxt("Simulations.csv", design, delimiter = ',', fmt = "%f",
+np.savetxt("Simulations.csv", design, delimiter = ',', fmt = "%.3f",
           header = 'Trial_number,Rule,Stimulus,Response,CorResp,FBcon,Expected value,PE_estimate,Response_likelihood,Module,Value_rule0,Value_rule1')
