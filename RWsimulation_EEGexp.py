@@ -39,7 +39,8 @@ def simulate_RW(learning_rate = 0.5, temperature = 1, design_file = 'Data0.csv',
     #important: values zijn voor de rules! Welke rule wil pp. uitvoeren 
     n_actions = 2
     n_stim = 2
-    values = np.random.uniform(size = (n_stim, n_actions))
+    #values = np.random.uniform(size = (n_stim, n_actions))
+    values = np.array([[0.5, 0.5], [0.5, 0.5]])
     prev_rule = 0
     total_reward = 0
     
@@ -107,3 +108,5 @@ for i in range(learning_rates.shape[0]):
                                data_map = 'Simulating_first_try')
     received_rewards = np.concatenate([received_rewards, np.array([total_reward])])
 print(received_rewards)
+
+
