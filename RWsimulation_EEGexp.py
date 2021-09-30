@@ -16,7 +16,8 @@ from psychopy import data , os
 from Simple_RW_model import softmax, choose_option, rescorla_wagner
 
 
-def simulate_RW(learning_rate = 0.5, temperature = 1, design_file = 'Data0.csv', data_file = 'Simulation.csv'): 
+def simulate_RW(learning_rate = 0.5, temperature = 1, design_file = 'Data0.csv', data_file = 'Simulation_.csv', 
+                data_map = 'Simulations_trying_phase'): 
 
     design_path = "C:\\Users\\Maud\\Documents\\Psychologie\\2e master psychologie\\Research Internship\\Start to model RI\\Maud_Sims\\Data_to_fit\\"
     design_DF = pandas.read_csv(design_path + design_file)
@@ -25,11 +26,11 @@ def simulate_RW(learning_rate = 0.5, temperature = 1, design_file = 'Data0.csv',
     design = design_DF.to_numpy()
     #design = np.column_stack([design, np.zeros([480, 2])])
     
-    output_map = 'Simulations_trying_phase'
+    output_map = data_map
     my_output_directory = os.getcwd() + '/' + output_map
     if not os.path.isdir(my_output_directory): 
             os.mkdir(my_output_directory)
-    output_file = data_file
+    output_file = os.path.join(output_map, data_file)
     
     n_trials = design.shape[0]
     alpha = learning_rate
@@ -50,8 +51,8 @@ def simulate_RW(learning_rate = 0.5, temperature = 1, design_file = 'Data0.csv',
         CorResp =  np.int(design[trial, 4])
         FBcon = design[trial, 5]
         
-        if trial == 0 or rule != prev_rule:
-            print("\n\nRule changed; current rule is {}".format(rule))
+        # if trial == 0 or rule != prev_rule:
+        #     print("\n\nRule changed; current rule is {}".format(rule))
         
         #define which weights are of importance on this trial (depending on which stimulus was shown)
         stimulus_weights = values[stimulus, :]
@@ -63,8 +64,9 @@ def simulate_RW(learning_rate = 0.5, temperature = 1, design_file = 'Data0.csv',
         rew_present = ((chosen_action == CorResp and FBcon == 1) or (chosen_action!= CorResp and FBcon == 0))*1
         rew_this_trial = rew_present * rew_per_trial
         #compute the PE and the updated value for this trial (and this stimulus-action pair)
+            # to compute the PE & updated value, just work with whether reward was present or not (why?)
         PE, updated_value = rescorla_wagner(previous_value = values[stimulus, chosen_action], 
-                                            obtained_rew = rew_this_trial, learning_rate = alpha)
+                                            obtained_rew = rew_present, learning_rate = alpha)
         
         #store the relevant variables in the array
         #store the response given on this trial 
@@ -86,9 +88,22 @@ def simulate_RW(learning_rate = 0.5, temperature = 1, design_file = 'Data0.csv',
         
     
     np.savetxt(output_file, design, delimiter = ',', fmt = "%.3f",
-              header = 'Trial_number,Rule,Stimulus,Response,CorResp,FBcon,Expected value,PE_estimate,Response_likelihood,Module,Value_rule0,Value_rule1')
+              header = 'Trial_number,Rule,Stimulus,Response,CorResp,FBcon,Expected value,PE_estimate,Response_likelihood,Module,Value_rule0,Value_rule1', 
+              comments = '')
     return total_reward
 
 
-total_reward = simulate_RW(learning_rate = 0.5, temperature = 1)
-print(total_reward)
+#1. Simulate data with the true learning rates ranging from 0.01 to 1 in steps of 0.01
+    # design is selected randomly for each 'participant' (simulation)
+    # for now: temperature is fixed at 1
+learning_rates = np.round(np.arange(0.01, 1, 0.01), 2)
+received_rewards = np.array([])
+for i in range(learning_rates.shape[0]): 
+    design_select = np.random.randint(0, 10, 1)[0]
+    current_learning_rate = learning_rates[i]
+    total_reward = simulate_RW(learning_rate = current_learning_rate, temperature = 1, 
+                               design_file = 'Data' + str(design_select) + '.csv', 
+                               data_file = 'Simulation_' + str(i) + '.csv', 
+                               data_map = 'Simulating_first_try')
+    received_rewards = np.concatenate([received_rewards, np.array([total_reward])])
+print(received_rewards)
