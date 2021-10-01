@@ -17,6 +17,14 @@ learning rates to be used incorrectly for the analysis
 - now: trying to plot the correlations as well 
  """
 
+"""Interesting remarks on this scripts
+- computed the correlations twice: the correlations remain exactly the same as long as 
+  the 'simulated data' remains the same
+- computed correlations when PE and Value data are and are not normaized 
+  --> correlations are exactly the same with or without normalization 
+      (is in line with K&T(2021) paper stating that the effect of normalization is minimal)"""
+
+
 import numpy as np
 import pandas
 from psychopy import data , os
@@ -57,24 +65,57 @@ def generate_data_incorrect_alpha(design = None, incorrect_learning_rate = 0.02)
         
     return PE_each_trial, Expected_value_each_trial
 
+def normalize(Data = None): 
+    Normalized_data = (Data - np.mean(Data)) / np.std(Data)
+    return Normalized_data
+
 correlations_PE = np.empty(shape = (learning_rates.size, learning_rates.size))
 correlations_V = np.empty(shape = (learning_rates.size, learning_rates.size))
+
+correlations_PE_norm = np.empty(shape = (learning_rates.size, learning_rates.size))
+correlations_V_norm = np.empty(shape = (learning_rates.size, learning_rates.size))
 
 for i in range(learning_rates.shape[0]): 
     true_alpha = learning_rates[i]
     dataA, n_trials = select_data(true_learning_rate = true_alpha)
     PE_dataA = dataA['PE_estimate']
+    PE_dataA_norm = normalize(PE_dataA)
     Value_dataA = dataA['Expected value']
+    Value_dataA_norm = normalize(Value_dataA)
     for j in range(learning_rates.shape[0]): 
         used_alpha = learning_rates[j]
         PE_dataB, Value_dataB = generate_data_incorrect_alpha(design = dataA, incorrect_learning_rate = used_alpha)
+        PE_dataB_norm = normalize(PE_dataB)
+        Value_dataB_norm = normalize(Value_dataB)
         #plt.scatter(PE_dataA, PE_dataB)
         corr_PE, _ = pearsonr(PE_dataA, PE_dataB)
         corr_V, _ = pearsonr(Value_dataA, Value_dataB)
+        corr_PE_norm, _ = pearsonr(PE_dataA_norm, PE_dataB_norm)
+        corr_V_norm, _ = pearsonr(Value_dataA_norm, Value_dataB_norm)
+        #Store corr_PE and corr_V in the matrix 
         correlations_PE[i, j] = corr_PE
         correlations_V[i, j] = corr_V
-        print(corr_PE, corr_V)
         
-    #Store corr_PE and corr_V in the matrix 
+        correlations_PE_norm[i, j] = corr_PE_norm
+        correlations_V_norm[i, j] = corr_V_norm
+        
+    print('We are at number {} of {}'.format(i, learning_rates.shape[0]))
 
-    
+np.savetxt('PE_correlations_1_10.csv', correlations_PE, fmt = "%.3f", delimiter = ',')
+np.savetxt('V_correlations_1_10.csv', correlations_V, fmt = "%.3f", delimiter = ',')
+np.savetxt('PE_correlations_norm_1_10.csv', correlations_PE_norm, fmt = "%.3f", delimiter = ',')
+np.savetxt('V_correlations_norm_1_10.csv', correlations_V_norm, fmt = "%.3f", delimiter = ',')
+
+#%%
+# import matplotlib as mpl
+
+fig, axes = plt.subplots(nrows = 1, ncols = 1)
+axes.set_title('Correlations_PE')
+heatmap_PE = axes.pcolormesh(correlations_PE)
+cbar_PE = plt.colorbar(heatmap_PE)
+plt.show()
+
+fig, axes = plt.subplots(nrows = 1, ncols = 1)
+axes.set_title('Correlations_Value')
+heatmap_V = axes.pcolormesh(correlations_V)
+cbar_V = plt.colorbar(heatmap_PE)
