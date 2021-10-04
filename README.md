@@ -1,4 +1,4 @@
-# research-internship
+# Research-internship
 
 Explanation of the different files within this repository 
 1. simple_RW_model.py:
