@@ -17,12 +17,13 @@ def generate_tosses(N = 10, P_tails = 0.5):
 def simulate_tosses(Mean_prob = 0.5, Std_prob = 0.2, N_trials = 10, N_pp = 25):
     all_data = np.empty(shape = [N_pp, N_trials], dtype = int)
     p_values = np.round(np.random.normal(loc = Mean_prob, scale = Std_prob, size = N_pp), 3)
-    p_values = np.where(p_values > 1, 1, p_values)
-    p_values = np.where(p_values < 0, 0, p_values)
+    while np.any(p_values >= 1) or np.any(p_values <= 0): 
+        p_values = np.where(p_values >= 1, 
+                            np.round(np.random.normal(loc = Mean_prob, scale = Std_prob, size = 1), 3), p_values)
+        p_values = np.where(p_values <= 0, np.round(np.random.normal(loc = Mean_prob, scale = Std_prob, size = 1), 3), p_values)
+    print(p_values)
     for pp in range(N_pp): 
         tosses = generate_tosses(N = N_trials, P_tails = p_values[pp])
         all_data[pp, :] = tosses 
     return p_values, all_data
 
-
-    
