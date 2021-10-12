@@ -1,56 +1,61 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Oct  8 11:38:20 2021
+
+@author: Maud
+"""
+
 from Simulate_data import generate_parameters, simulate_data
 from Estimate_likelihood import likelihood
 import numpy as np
 import pandas as pd
 import os 
+import sys
+from scipy import optimize
 
-HPC = True #Defines the correct directory to store the data 
-test = False # should be True when testing on own laptop or in interactive qsub 
-#%%Simulate data
-mean_alpha1 = 0.3
-mean_alpha2 = 0.2
-std_alpha = 0.05
-N_pp = 40
-N_trials = 3000
 
-learning_rates_G1 = generate_parameters(mean = mean_alpha1, std = std_alpha, n_pp = int(N_pp/2)) 
-learning_rates_G2 = generate_parameters(mean = mean_alpha1, std = std_alpha, n_pp = int(N_pp/2))
-Learning_rates = np.concatenate([learning_rates_G1, learning_rates_G2])
-Temperatures = np.ones(N_pp)
+"""Now possible to make a dataframe with the estimations for all participants!"""
 
-DF_all_pp = simulate_data(learning_rates = Learning_rates, temperatures = Temperatures, 
-                          n_trials = N_trials)
+HPC = True
+
+
+# # get identifier of the datafile you want to process
+# if HPC == True: 
+#     val = sys.argv[1:]
+#     assert len(val) == 1
+#         #length 1 since only 1 parameter now 
+#     pp = val[0]
+# else: 
+#     pp = 1
 
 #%%
-participants = np.arange(0, N_pp, 1).astype(int)
-if test == True: 
-    participants = np.array([0, 1]).astype(int)
-alpha_estimates = np.array([])
-for pp in participants: 
-    alpha_range = np.round(np.arange(0.1, 1, 0.01), 3)
-    if test == True: 
-        alpha_range = np.round(np.arange(0.1, 1, 0.1), 3)
-    all_logL = np.array([])
-    for alpha in alpha_range:
-        logL = likelihood(learning_rate_estimate = alpha, temperature_estimate = 1, 
-                          actual_choices = DF_all_pp['choices'][pp], 
-                          actual_rewards = DF_all_pp['rewards'][pp], 
-                          start_values = np.array([0.5,0.5]))
-        all_logL = np.append(all_logL, -logL)
-        # print("\n\n\n")
-        
-        # print("Likelihood for alpha {} is {}".format(alpha, -logL))
-    alpha_estimate = alpha_range[np.argmin(all_logL)]
-    alpha_estimates = np.append(alpha_estimates, alpha_estimate)
-    print("real_LR = {}; est_LR = {} for pp {}".format(DF_all_pp['learning_rate'][pp], 
-                                                       alpha_estimate, pp))
-DF_all_pp['est_learning_rate'] = alpha_estimates
 
 if HPC == True: 
-    data_dir = os.environ.get('VSC_DATA')
-    df_dir = data_dir + '/RW_simple/Data'
-    if not os.path.isdir(df_dir): 
-        os.mkdir(df_dir)
+    data_dir = os.environ.get('VSC_SCRATCH')
+    simul_dir = data_dir + '/RW_simple/Data'
 else: 
-    df_dir= os.getcwd()
-DF_all_pp.to_csv(df_dir + str("/DF_{}trials_{}pp.csv".format(N_trials, N_pp)))
+    simul_dir= os.getcwd()
+
+N_pp = 40
+participants = np.arange(0, N_pp, 1).astype(int)
+trials = np.array([100, 200, 300, 500, 1000, 3000])
+estimation_DF = pd.DataFrame(columns = np.concatenate([['real_param'], trials.astype(str)]))
+for pp in participants: 
+    Parameters = pd.DataFrame(columns = ['n_trials', 'alpha_estimate', 'temp_estimate', 
+                                         'alpha_real', 'temp_real'])
+    data_file = simul_dir + str('/Simulation_pp{}.csv'.format(pp))
+    data = pd.read_csv(data_file)
+    alpha_real = data['learning_rate'][0]   #what was the actual learning rate of the pp. 
+    estimation_DF = estimation_DF.append({'real_param': alpha_real}, ignore_index = True)
+        #add the real learning rate to the array 
+    pos = 1
+    for n_trials in trials: #trials: contains how many trials will be used to estimate the parameter(s)
+        estim_param = optimize.fmin(likelihood, np.random.rand(1), args =(tuple([data_file, n_trials])), 
+                                maxiter= 100000, ftol = 0.001)
+            #gradient descent function to find the most likely parameters given the data 
+                #might have to repeat this several times 
+        alpha_estimate = estim_param #the most likely learning rate, given the data 
+        print('real alpha is {}, estimated alpha is {}'.format(alpha_real, alpha_estimate))
+        estimation_DF.iloc[pp, pos] = np.round(alpha_estimate, 3)
+        pos = pos + 1
+estimation_DF.to_csv(data_dir + '/RW_simple' + '/Estimations.csv')
