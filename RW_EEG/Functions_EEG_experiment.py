@@ -51,7 +51,8 @@ def generate_parameters(mean = 0.1, std = 0.05, n_pp = 1):
 
 
 #%% Function to simulate data for one participant with a specific learning_rate, design_file and output_file 
-def simulate_RW(learning_rate = 0.5, temperature = 0.41, design_file = None, output_file = None): 
+def simulate_RW(learning_rate = 0.5, temperature = 0.41, design_file = None, 
+                output_file = None, triple_trials = False): 
     """Parameters within function 
         - learning rate: should be defined for this participant
         - temperature: is fixed at 0.2
@@ -59,11 +60,12 @@ def simulate_RW(learning_rate = 0.5, temperature = 0.41, design_file = None, out
         - data_file: should contain both the file name and the path towards the file"""
 
     design_DF = pd.read_csv(design_file)
+    if triple_trials == True: design_DF = design_DF.append(design_DF).append(design_DF)
     design_DF.columns = ['Trial_number', 'Rule', 'Stimulus', 'Response', 'CorResp', 
                          'FBcon', 'Expected value','PE_estimate', 'Response_likelihood', 'real_LR']
     design_DF['real_LR'] = learning_rate
     
-    n_trials = np.max(design_DF['Trial_number'])+1
+    n_trials = design_DF.shape[0]
     alpha = learning_rate
     gamma = temperature
     rew_per_trial = 10 #how much you gain on a rewarded trial 
