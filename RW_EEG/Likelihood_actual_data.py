@@ -11,7 +11,8 @@ import os
 from scipy import optimize
 
 
-def likelihood_realdata(learning_rate_estimate, file_name, n_trials):
+def likelihood_realdata(params, file_name, n_trials):
+    print(params)
     """File_name: should contain path towards the file of this pp."""
     global data
     data = pd.read_table(file_name, sep = '\t')
@@ -25,13 +26,13 @@ def likelihood_realdata(learning_rate_estimate, file_name, n_trials):
         chosen_action = actual_choices[trial].astype(int)
         rew_this_trial = actual_rewards[trial]
         stimulus_weights = values[stimulus, :]
-        probabilities = softmax(current_values = stimulus_weights, temperature = 0.41)
+        probabilities = softmax(current_values = stimulus_weights, temperature = params[1])
         current_likelihood = probabilities[chosen_action]
         
         logL = logL + np.log(current_likelihood)
         PE, updated_value = rescorla_wagner(previous_value = values[stimulus, chosen_action], 
                                                 obtained_rew = rew_this_trial, 
-                                                learning_rate = learning_rate_estimate) 
+                                                learning_rate = params[0]) 
         values[stimulus, chosen_action] = updated_value
     return -logL
 
@@ -50,15 +51,12 @@ for pp in participants:
     Estimation_folder = os.path.join(os.getcwd(), 'Estimations_realpp')
     if not os.path.isdir(Estimation_folder):
         os.mkdir(Estimation_folder)
-    Estimation_file = os.path.join(Estimation_folder, 'Estimate_realpp_fmin.csv')
+    Estimation_file = os.path.join(Estimation_folder, 'Estimate_realpp_2param_softmax_division.csv')
     for n_trials in trials: 
-        # estim_param2 = optimize.fmin(likelihood_realdata, np.random.rand(1), 
-        #                                  args =(tuple([file_name, n_trials])), 
-        #                                  maxfun= 100000, xtol = 0.001)
-        estim_param = optimize.differential_evolution(likelihood_realdata, [(0,1)], 
-                                                      args = (tuple([file_name, n_trials])), 
-                                                  maxiter = 100000, tol = 0.005)
-        estimation_DF[str(n_trials)][pp] = estim_param.x
+        estim_param = optimize.fmin(likelihood_realdata, np.random.rand(2), 
+                                          args =(tuple([file_name, n_trials])), 
+                                          maxfun= 100000, xtol = 0.001)
+        estimation_DF[str(n_trials)][pp] = estim_param
 estimation_DF.to_csv(Estimation_file)
 
     
