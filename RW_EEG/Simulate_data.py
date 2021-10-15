@@ -29,7 +29,8 @@ if HPC == True:
     nreps = 2    #for each pp. generate 1000 'experiment-executions' 
     for rep in range(nreps): 
         Output_file = os.path.join(Output_folder, 'participant{}rep{}.csv'.format(str(pp_number), str(rep)))
-        total_reward = simulate_RW(learning_rate = LR, design_file = Design_file, output_file = Output_file)
+        total_reward = simulate_RW(learning_rate = LR, design_file = Design_file, 
+                                   output_file = Output_file, triple_trials = True)
         print(total_reward)
 
 
@@ -44,15 +45,14 @@ else:
         Design_folder = r"C:\Users\Maud\Documents\Psychologie\2e master psychologie\Research Internship\Start to model RI\Maud_Sims\RW\Data_to_fit"
         Design_file = os.path.join(Design_folder, design_filename)
         Output_folder = os.path.join(os.getcwd(), 'Simulations', 'Participant{}'.format(str(pp_number)))
-        nreps = 20
+        nreps = 1
         reps = np.arange(0, nreps, 1)
         if not os.path.isdir(Output_folder): 
             os.makedirs(Output_folder)
         for rep in reps: 
             Output_file = os.path.join(Output_folder, 'participant{}rep{}.csv'.format(str(pp_number), str(rep)))
-            total_reward = simulate_RW(learning_rate = LR, design_file = Design_file, output_file = Output_file)
+            total_reward = simulate_RW(learning_rate = LR, design_file = Design_file, 
+                                       output_file = Output_file, triple_trials = True)
             print(total_reward)
         
-    
-
-
+  
