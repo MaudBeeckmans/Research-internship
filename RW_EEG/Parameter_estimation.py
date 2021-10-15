@@ -28,8 +28,10 @@ else:
         print("We're at pp {}".format(pp_number))
         folder_simul_name = os.path.join(os.getcwd(), 'Simulations', 'Participant{}'.format(pp_number))    
         simul_files = os.listdir(folder_simul_name)
-        Estimation_file = os.path.join(os.getcwd(), 'Estimations', 'Estimate_pp{}.csv'.format(pp_number))
-
+        Estimation_folder = os.path.join(os.getcwd(), 'Estimations')
+        if not os.path.isdir(Estimation_folder):
+            os.makedirs(Estimation_folder)
+        Estimation_file = os.path.join(Estimation_folder, 'Estimate_pp{}.csv'.format(pp_number))
         trials = np.array([100, 200, 300, 400, 480])
         estimation_DF = pd.DataFrame(columns = np.concatenate([['real_param'], trials.astype(str), ['rep']]))
         
