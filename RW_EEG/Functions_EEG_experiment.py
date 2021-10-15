@@ -13,7 +13,7 @@ import os
 #%% General RW functions
 
 def softmax(current_values = np.array([0, 0]), temperature = 1): 
-    probabilities = np.exp(current_values*temperature) / np.sum((np.exp(current_values[0]*temperature)+np.exp(current_values[1]*temperature)))
+    probabilities = np.exp(current_values/temperature) / np.sum((np.exp(current_values[0]/temperature)+np.exp(current_values[1]/temperature)))
     # is the softmax function
     return probabilities
 
