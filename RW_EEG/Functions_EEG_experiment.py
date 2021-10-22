@@ -128,18 +128,17 @@ def simulate_RW(learning_rate = 0.5, temperature = 0.41, design_file = None,
 
 #%% Function to estimate the likelihood given the data and the current parameter 
 
-def likelihood(learning_rate_estimate, file_name, n_trials):
+def likelihood(learning_rate_estimate, data, n_trials, used_temperature):
     """Function to estimate the likelihood of a given parameter combination (learning_rate
     and temperature) given the data. Actual_choices, actual_rewards and start_values are
     drawn from the actual data of the participant. Returns the logL for these parameter values, 
     the higher the logL, the better! Thus if want to minimize, take -logL and find minimum!"""
-    data = pd.read_csv(file_name)
     # n_trials = data.shape[0]
     values = np.array([[0.5, 0.5], [0.5, 0.5]])
     Accuracy = (data['Response'] == data['CorResp'])[:n_trials]
-    actual_rewards = Accuracy == data['FBcon'][:n_trials]
-    actual_choices = data['Response'][:n_trials]
-    stimuli = data['Stimulus']
+    actual_rewards = np.array((Accuracy == data['FBcon'][:n_trials]))
+    actual_choices = np.array(data['Response'][:n_trials])
+    stimuli = np.array(data['Stimulus'])
     logL = 0
     for trial in range(n_trials): 
         stimulus = int(stimuli[trial])
@@ -149,7 +148,7 @@ def likelihood(learning_rate_estimate, file_name, n_trials):
         #calculate the probability of each choice at this trial given the Values
              #Values are updated with current_learning_rate
         stimulus_weights = values[stimulus, :]
-        probabilities = softmax(current_values = stimulus_weights, temperature = 0.41)
+        probabilities = softmax(current_values = stimulus_weights, temperature = used_temperature)
         current_likelihood = probabilities[chosen_action]
         logL = logL + np.log(current_likelihood)
         # print(current_likelihood)
