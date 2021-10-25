@@ -51,19 +51,16 @@ def generate_parameters(mean = 0.1, std = 0.05, n_pp = 1):
 
 
 #%% Function to simulate data for one participant with a specific learning_rate, design_file and output_file 
-def simulate_RW(learning_rate = 0.5, temperature = 0.41, design_file = None, 
-                output_file = None, triple_trials = False): 
+def simulate_RW(learning_rate = 0.5, temperature = 0.41, design_file = None, triple_trials = False): 
     """Parameters within function 
         - learning rate: should be defined for this participant
         - temperature: is fixed at 0.2
         - design_file: should contain both the file name and the path towards the file 
         - data_file: should contain both the file name and the path towards the file"""
+    responses = np.array([])
 
     design_DF = pd.read_csv(design_file)
     if triple_trials == True: design_DF = design_DF.append(design_DF).append(design_DF)
-    design_DF.columns = ['Trial_number', 'Rule', 'Stimulus', 'Response', 'CorResp', 
-                         'FBcon', 'Expected value','PE_estimate', 'Response_likelihood', 'real_LR']
-    design_DF['real_LR'] = learning_rate
     
     n_trials = design_DF.shape[0]
     alpha = learning_rate
@@ -104,13 +101,7 @@ def simulate_RW(learning_rate = 0.5, temperature = 0.41, design_file = None,
         
         #store the relevant variables in the array
         #store the response given on this trial 
-        design_DF.iloc[trial, 3] = chosen_action
-        #first store the value for this trial before the value is updated
-        design_DF.iloc[trial, 6] = values[stimulus, chosen_action]
-        #Store the PE on this trial (is related to the choice you made)
-        design_DF.iloc[trial, 7] = PE
-        #Store the probability for the choise that you made on this trial 
-        design_DF.iloc[trial, 8] = action_probabilities[chosen_action]
+        responses = np.append(responses, chosen_action)
         
         #update the value of the stimulus-action that was relevant this trial 
         values[stimulus, chosen_action] = updated_value
@@ -119,11 +110,7 @@ def simulate_RW(learning_rate = 0.5, temperature = 0.41, design_file = None,
         prev_rule = rule
         total_reward = total_reward + rew_this_trial
         #print("Action = {}, Stimulus = {}; Rew = {}; updated values are {}".format(chosen_action, stimulus, rew_present, values))
-        
-    
-    design_DF.to_csv(output_file)
-    return total_reward
-
+    return total_reward, responses
 
 
 #%% Function to estimate the likelihood given the data and the current parameter 
