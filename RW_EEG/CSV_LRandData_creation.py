@@ -19,7 +19,7 @@ if group != 'allLR':
 else: 
     learning_rates = np.arange(0, 1.1, 0.01)
     N_simulations = learning_rates.shape[0]
-if variable_Temps == True: temperatures = generate_parameters(mean = 0.6, std = 0.2, n_pp = N_simulations)
+if variable_Temps == True: temperatures = generate_parameters(mean = 0.41, std = 0.2, n_pp = N_simulations)
 else: temperatures = np.repeat(0.41, N_simulations)
 
 Output_file = 'pp_overview{}_group{}_variableTemp.csv'.format(N_simulations, group)
