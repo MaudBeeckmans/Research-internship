@@ -8,28 +8,28 @@ Created on Wed Oct 13 17:22:00 2021
 from Functions_EEG_experiment import generate_parameters
 import numpy as np 
 
-all_possible_LR =False
+group = 3
+variable_Temps = True
 
-if all_possible_LR == False: 
-    N_pp = 80
-    group_mean = 0.8
+if group != 'allLR': 
+    N_simulations = 80
+    group_mean = 0.7
     group_std = 0.1
-    Output_file = 'pp_overview{}_group1.csv'.format(N_pp)
-
-    learning_rates = generate_parameters(mean = group_mean, std = group_std, n_pp = N_pp)
-    pp_numbers = np.arange(0, N_pp, 1)
-    size_array = N_pp
+    learning_rates = generate_parameters(mean = group_mean, std = group_std, n_pp = N_simulations)
 else: 
-    learning_rates = np.arange(0, 1.1, 0.1)
-    size_array = learning_rates.shape[0]
-    pp_numbers = np.arange(0, size_array, 1)
-    Output_file = 'allLR_overview.csv'
+    learning_rates = np.arange(0, 1.1, 0.01)
+    N_simulations = learning_rates.shape[0]
+if variable_Temps == True: temperatures = generate_parameters(mean = 0.6, std = 0.2, n_pp = N_simulations)
+else: temperatures = np.repeat(0.41, N_simulations)
 
+Output_file = 'pp_overview{}_group{}_variableTemp.csv'.format(N_simulations, group)
+simul_numbers = np.arange(0, N_simulations, 1)
+    
 learning_rates = np.round(learning_rates, 3)
-data_selection = np.random.randint(0, 10, size = size_array)
+temperatures = np.round(temperatures, 3)
+data_selection = np.random.randint(0, 10, size = N_simulations)
 
 
-CSV = np.column_stack([learning_rates, data_selection, pp_numbers])
-np.savetxt(Output_file, CSV, delimiter = ',', fmt = ("%.3f", "%.i", "%.i"),
-              header = 'LR,Data,pp', comments = '')
-
+CSV = np.column_stack([learning_rates, temperatures, data_selection, simul_numbers])
+np.savetxt(Output_file, CSV, delimiter = ',', fmt = ("%.3f","%.3f", "%.i", "%.i"),
+              header = 'LR,Temp,Data,pp', comments = '')
