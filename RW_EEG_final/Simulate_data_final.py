@@ -13,6 +13,7 @@ import numpy as np
 # Variables that can be adapted 
 N_pp = 200 # Number of pp. used to generate the data 
 N_reps_run = 20 # Number of repetitions executed within one run of this script
+seed = 'seedset'
 
 # One run of the file = one repetition: for each gruop 200 pp and their behaviour are simulated on the task 
 groups = np.array([1, 2, 3])
@@ -28,6 +29,8 @@ param = sys.argv[1:]   #Get the params from the command line (each repetition = 
 assert len(param) == 1     #Checks whether there is only 1 parameter 
 subset = int(param[0])
 
+# a different random seed is set each time the script is ran 
+np.random.seed(subset)
 
 # Deduce which of the 1000 repetitions we're currently at
 reps = np.arange(subset*N_reps_run, (subset+1)*N_reps_run, 1)
@@ -38,17 +41,18 @@ for rep_number in reps:
     participants = np.arange(0, N_pp, 1)
     true_parameters_DF = pd.DataFrame(columns = ['LR_g1', 'LR_g2', 'LR_g3', 
                                                  'T_g1', 'T_g2', 'T_g3', 
-                                                 'Design_g1', 'Design_g2', 'Design_g3'],index = participants)
+                                                 'Design_g1', 'Design_g2', 'Design_g3', 'Seed'],index = participants)
+    true_parameters_DF['Seed'] = subset
     
     # An LR & temp folder is created that will contain the LRs and temperatures stored for all groups in 1 file 
-    param_foldername = 'True_parameters_{}pp'.format(N_pp)
+    param_foldername = 'True_parameters_{}pp_{}'.format(N_pp, seed)
     param_folder = os.path.join(os.environ.get('VSC_DATA'), 'RW_EEG_final', param_foldername)
     if not os.path.isdir(param_folder): 
         os.makedirs(param_folder)
     
     for group in groups: 
         # for each group a response folder is created that will contain the LRs and the output files for this group 
-        responses_foldername = 'Final_Simulations_group{}_Temp{}_{}pp'.format(group, temp_type, N_pp)
+        responses_foldername = 'Final_Simulations_group{}_{}pp_{}'.format(group, N_pp, seed)
         responses_folder = os.path.join(os.environ.get('VSC_DATA'), 'RW_EEG_final', responses_foldername)
         
         if not os.path.isdir(responses_folder): 
