@@ -28,13 +28,9 @@ param = sys.argv[1:]   #Get the params from the command line (each repetition = 
 assert len(param) == 1     #Checks whether there is only 1 parameter 
 subset = int(param[0])
 
-# a different random seed is set each time the script is ran 
-np.random.seed(subset)
 
 # Deduce which of the 1000 repetitions we're currently at
 reps = np.arange(subset*N_reps_run, (subset+1)*N_reps_run, 1)
-
-reps = np.array([118, 119, 997, 998, 999])
 
 for rep_number in reps: 
     print("We're at repetition {}".format(rep_number))
