@@ -39,7 +39,7 @@ base_Tempfolder = os.path.join(os.environ.get('VSC_SCRATCH'), 'RW_EEG_final', 'E
 # if the folders don't exist yet, create the folders 
 folders = [base_LRfolder, base_Tempfolder]
 
-for group in groups: 
+for group in groups:
     print('Estimations for group {} started'.format(group))
     design_array = param_DF['Design_g{}'.format(group)]
     # get the responses from this participant (are stored in a csv-file)
@@ -88,11 +88,11 @@ for group in groups:
             LR_estim = estim_param[0]
 
             estimation_repeat = 0
-            while LR_estim < 0.01 and estimation_repeat < 10:
+            while LR_estim < 0.01 and estimation_repeat < 5:
                 print('\nRepetition of estimation was !! for pp {} from rep {} with {} n_trials.'.format(pp, 
                                                                         rep_number, n_trials))
                 estim_param = optimize.fmin(likelihood, np.random.rand(2), args =(tuple([start_design, n_trials])), 
-                                maxfun= 100000, xtol = 0.001)
+                                maxfun= 1000, xtol = 0.001)
                 LR_estim = estim_param[0]
                 estimation_repeat += 1
             if LR_estim < 0.01 or LR_estim > 2: 
@@ -101,8 +101,8 @@ for group in groups:
             # store the best fitting parameter(s) in the estimation_DFs in the correct column (n_trials) and 
                 # correct row (this_rep)
             
-            LREstimation_DF.loc[pp, str(n_trials)] = estim_param[0]
-            TempEstimation_DF.loc[pp, str(n_trials)] = estim_param[1]
+            LREstimation_DF.loc[pp, str(n_trials)] = np.round(estim_param[0], 3)
+            TempEstimation_DF.loc[pp, str(n_trials)] = np.round(estim_param[1], 3)
     
     # Save the estimations 
     LREstimation_DF.to_csv(LREstimation_file)
