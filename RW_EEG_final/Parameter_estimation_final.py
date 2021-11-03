@@ -12,7 +12,8 @@ from scipy import optimize
 import pandas as pd 
 
 
-N_pp = 200 # number of pp used 
+N_pp = 10 # number of pp used 
+seed = '_seed23'
 
 groups= np.array([1, 2, 3]) # for which groups you'd like to do the parameter estimation 
 # the different n_trials that will be used to generate the parameter estimates
@@ -29,7 +30,8 @@ assert len(rep_number) == 1     #Checks whether there are n params
 rep_number = int(rep_number[0])
 
 # Deduce the parameters for this repetition 
-param_folder = os.path.join(os.environ.get('VSC_DATA'), 'RW_EEG_final', 'True_parameters_{}pp'.format(N_pp))
+param_folder = os.path.join(os.environ.get('VSC_DATA'), 'RW_EEG_final', 'True_parameters_{}pp{}'.format(N_pp, seed))
+print(param_folder)
 param_DF = pd.read_csv(os.path.join(param_folder, 'True_parameters_rep{}.csv'.format(rep_number)))
 
 # define the folders where the LR estimates and the Temperature estimates will be stored (each repetition)
@@ -43,16 +45,16 @@ for group in groups:
     print('Estimations for group {} started'.format(group))
     design_array = param_DF['Design_g{}'.format(group)]
     # get the responses from this participant (are stored in a csv-file)
-    response_foldername = 'Final_Simulations_group{}_Tempvariable_{}pp'.format(group, N_pp)
+    response_foldername = 'Final_Simulations_group{}_{}pp{}'.format(group, N_pp, seed)
     response_file = os.path.join(os.environ.get('VSC_DATA'), 'RW_EEG_final', response_foldername, 
                                  'responses_group{}_rep{}.csv'.format(group, rep_number))
     responses_allpp = pd.read_csv(response_file, header = None)
     
     #where will the LR and Temperature estimations be stored
-    LREstimation_folder = os.path.join(base_LRfolder, 'LREstimations_group{}_Temp{}_{}pp'.format(group, 
-                                                                                        temp_type, N_pp))
-    TempEstimation_folder = os.path.join(base_Tempfolder, 'TempEstimations_group{}_Temp{}_{}pp'.format(group, 
-                                                                                        temp_type, N_pp))
+    LREstimation_folder = os.path.join(base_LRfolder, 'LREstimations_group{}_Temp{}_{}pp{}'.format(group, 
+                                                                                        temp_type, N_pp, seed))
+    TempEstimation_folder = os.path.join(base_Tempfolder, 'TempEstimations_group{}_Temp{}_{}pp{}'.format(group, 
+                                                                                        temp_type, N_pp, seed))
     folders = [LREstimation_folder, TempEstimation_folder]
     for folder in folders: 
         if not os.path.isdir(folder): os.makedirs(folder)
@@ -73,6 +75,7 @@ for group in groups:
     
     
     for pp in participants: 
+        print("\n\nWe're at pp {}\n\n".format(pp))
         if pp%50 == 0: print("\n\nWe're at pp {}\n\n".format(pp))
         # the start design: containing the stimuli and FB at each trial for this pp.
         start_design = pd.read_csv(os.path.join(os.environ.get('VSC_HOME'), 'RW_EEG', 'Design', 
