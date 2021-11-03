@@ -12,8 +12,8 @@ import numpy as np
 
 # Variables that can be adapted 
 N_pp = 10 # Number of pp. used to generate the data 
-N_reps_run = 10 # Number of repetitions executed within one run of this script
-seed = 'seed23'
+N_reps_run = 5 # Number of repetitions executed within one run of this script
+param_seed = 'seed23'
 
 # One run of the file = one repetition: for each gruop 200 pp and their behaviour are simulated on the task 
 groups = np.array([1, 2, 3])
@@ -28,17 +28,19 @@ subset = int(param[0])
 reps = np.arange(subset*N_reps_run, (subset+1)*N_reps_run, 1)
 
 for rep_number in reps: 
+    # for each repetition: set the seed number to the number of this repetition 
+    np.random.seed(rep_number)
     print("We're at repetition {}".format(rep_number))
     
     # import the true parameters generated all at once for this number of pp with random seed set to spec. value
     true_params_folder = os.path.join(os.environ.get('VSC_DATA'), 'RW_EEG_final', 
-                                                     'True_parameters_{}pp_{}'.format(N_pp, seed))
+                                                     'True_parameters_{}pp_{}'.format(N_pp, param_seed))
     true_parameters_DF = pd.read_csv(os.path.join(true_params_folder, 'True_parameters_rep{}.csv'.format(rep_number)))
     print(true_parameters_DF.shape)
     
     for group in groups: 
         # for each group a response folder is created that will contain the LRs and the output files for this group 
-        responses_foldername = 'Final_Simulations_group{}_{}pp_{}'.format(group, N_pp, seed)
+        responses_foldername = 'Final_Simulations_group{}_{}pp_{}'.format(group, N_pp, param_seed)
         responses_folder = os.path.join(os.environ.get('VSC_DATA'), 'RW_EEG_final', responses_foldername)
         
         if not os.path.isdir(responses_folder): 
@@ -62,6 +64,3 @@ for rep_number in reps:
             
         responses_file = os.path.join(responses_folder, 'responses_group{}_rep{}.csv'.format(group, rep_number))
         np.savetxt(responses_file, store_responses, fmt = '%.i', delimiter = ',') 
-
-
-
