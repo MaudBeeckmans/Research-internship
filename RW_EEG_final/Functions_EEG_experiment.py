@@ -76,7 +76,6 @@ def simulate_RW(learning_rate = 0.5, temperature = 0.41, design_file = None, tri
     for trial in range(n_trials): 
         
         #define the variables you'll need for this trial (take them from the design_array)
-        rule = design_DF.iloc[trial, 1]
         stimulus = np.int(design_DF.iloc[trial, 2])
         CorResp =  np.int(design_DF.iloc[trial, 4])
         FBcon = design_DF.iloc[trial, 5]
@@ -107,7 +106,6 @@ def simulate_RW(learning_rate = 0.5, temperature = 0.41, design_file = None, tri
         values[stimulus, chosen_action] = updated_value
         
         
-        prev_rule = rule
         total_reward = total_reward + rew_this_trial
         #print("Action = {}, Stimulus = {}; Rew = {}; updated values are {}".format(chosen_action, stimulus, rew_present, values))
     return total_reward, responses
@@ -142,6 +140,37 @@ def likelihood(parameters, data, n_trials):
         PE, updated_value = rescorla_wagner(previous_value = values[stimulus, chosen_action], 
                                                 obtained_rew = rew_this_trial, 
                                                 learning_rate = parameters[0]) 
+        values[stimulus, chosen_action] = updated_value
+    return -logL
+
+
+def likelihood_tempfixed(LR_estimate, data, n_trials, used_temperature):
+    """Function to estimate the likelihood of a given parameter combination (learning_rate
+    and temperature) given the data. Actual_choices, actual_rewards and start_values are
+    drawn from the actual data of the participant. Returns the logL for these parameter values, 
+    the higher the logL, the better! Thus if want to minimize, take -logL and find minimum!"""
+    # n_trials = data.shape[0]
+    values = np.array([[0.5, 0.5], [0.5, 0.5]])
+    Accuracy = (data['Response'] == data['CorResp'])[:n_trials]
+    actual_rewards = np.array((Accuracy == data['FBcon'][:n_trials]))
+    actual_choices = np.array(data['Response'][:n_trials])
+    stimuli = np.array(data['Stimulus'])
+    logL = 0
+    for trial in range(n_trials): 
+        stimulus = int(stimuli[trial])
+        #The choice that was made at this trial and whether reward was received
+        chosen_action = actual_choices[trial].astype(int)
+        rew_this_trial = actual_rewards[trial]
+        #calculate the probability of each choice at this trial given the Values
+             #Values are updated with current_learning_rate
+        stimulus_weights = values[stimulus, :]
+        probabilities = softmax(current_values = stimulus_weights, temperature = used_temperature)
+        current_likelihood = probabilities[chosen_action]
+        logL = logL + np.log(current_likelihood)
+        # print(current_likelihood)
+        PE, updated_value = rescorla_wagner(previous_value = values[stimulus, chosen_action], 
+                                                obtained_rew = rew_this_trial, 
+                                                learning_rate = LR_estimate) 
         values[stimulus, chosen_action] = updated_value
     return -logL
 
