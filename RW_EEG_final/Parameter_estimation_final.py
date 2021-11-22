@@ -5,21 +5,24 @@ Created on Thu Oct 14 10:51:54 2021
 @author: Maud
 """
 
-from Functions_EEG_experiment import likelihood
+from Functions_EEG_experiment import likelihood, likelihood_tempfixed
 import os, sys
 import numpy as np 
 from scipy import optimize
 import pandas as pd 
 
 
-N_pp = 10 # number of pp used 
+N_pp = 200 # number of pp used 
 seed = '_seed23'
 
 groups= np.array([1, 2, 3]) # for which groups you'd like to do the parameter estimation 
+if seed == 'seed_24': groups = np.array([0]) # groups = 0 when seed24, when estimating the params for the uniform distribution
 # the different n_trials that will be used to generate the parameter estimates
 trials = np.concatenate([np.array([50]), np.arange(100, 1500, 100), np.array([1440])])
+
 # temperature is estimated 
-temp_type = 'variable' 
+fixed_temperature = 0.4
+temp_type = 'variable' # should be 'variable' or 'fixedat{}'.format(temperature) 
 participants = np.arange(0, N_pp, 1)
 
 
@@ -63,15 +66,17 @@ for group in groups:
     LREstimation_file = os.path.join(LREstimation_folder, 'LREstimate_rep{}.csv'.format(rep_number))
     TempEstimation_file = os.path.join(TempEstimation_folder, 'TempEstimate_rep{}.csv'.format(rep_number))
     
-    # Create the dataframe that will contain all the estimations for this simulation (shape will be: n_reps x n_cols)
+    # Create the dataframe that will contain all the LR estimations for this simulation (shape will be: n_reps x n_cols)
     LREstimation_DF = pd.DataFrame(columns = np.concatenate([['Real_LR'], trials.astype(str)]), 
                                    index = np.arange(0, N_pp))
-    TempEstimation_DF = pd.DataFrame(columns = np.concatenate([['Real_Temp'], trials.astype(str)]), 
-                                     index = np.arange(0, N_pp))
-    
     # fill in the true parameters
     LREstimation_DF['Real_LR'] = param_DF['LR_g{}'.format(group)]
-    TempEstimation_DF['Real_Temp'] = param_DF['T_g{}'.format(group)]
+    
+    # Create the dataframe that will contain all the LR estimations for this simulation (shape will be: n_reps x n_cols)
+    if temp_type == 'variable': 
+        TempEstimation_DF = pd.DataFrame(columns = np.concatenate([['Real_Temp'], trials.astype(str)]), 
+                                         index = np.arange(0, N_pp))
+        TempEstimation_DF['Real_Temp'] = param_DF['T_g{}'.format(group)]
     
     
     for pp in participants: 
@@ -86,16 +91,24 @@ for group in groups:
         
         for n_trials in trials: #trials: contains how many trials will be used to estimate the parameter(s)
             # estimate the parameters given the start_design; n_trials defines how many trials are used to estimate the parameter(s) 
-            estim_param = optimize.fmin(likelihood, np.random.rand(2), args =(tuple([start_design, n_trials])), 
-                                maxfun= 1000, xtol = 0.001)
+            if temp_type == 'variable': 
+                estim_param = optimize.fmin(likelihood, np.random.rand(2), args =(tuple([start_design, n_trials])), 
+                                    maxfun= 1000, xtol = 0.001)
+            else: 
+                estim_param = optimize.fmin(likelihood_tempfixed, np.random.rand(1), args =(tuple([start_design, n_trials, fixed_temperature])), 
+                                    maxfun= 1000, xtol = 0.001)
             LR_estim = estim_param[0]
 
             estimation_repeat = 0
             while LR_estim < 0.01 and estimation_repeat < 5:
                 print('\nRepetition of estimation was !! for pp {} from rep {} with {} n_trials.'.format(pp, 
                                                                         rep_number, n_trials))
-                estim_param = optimize.fmin(likelihood, np.random.rand(2), args =(tuple([start_design, n_trials])), 
+                if temp_type == 'variable': 
+                    estim_param = optimize.fmin(likelihood, np.random.rand(2), args =(tuple([start_design, n_trials])), 
                                 maxfun= 1000, xtol = 0.001)
+                else: 
+                    estim_param = optimize.fmin(likelihood_tempfixed, np.random.rand(1), args =(tuple([start_design, n_trials, fixed_temperature])), 
+                                    maxfun= 1000, xtol = 0.001)
                 LR_estim = estim_param[0]
                 estimation_repeat += 1
             if LR_estim < 0.01 or LR_estim > 2: 
@@ -105,8 +118,8 @@ for group in groups:
                 # correct row (this_rep)
             
             LREstimation_DF.loc[pp, str(n_trials)] = np.round(estim_param[0], 3)
-            TempEstimation_DF.loc[pp, str(n_trials)] = np.round(estim_param[1], 3)
+            if temp_type == 'variable': TempEstimation_DF.loc[pp, str(n_trials)] = np.round(estim_param[1], 3)
     
     # Save the estimations 
     LREstimation_DF.to_csv(LREstimation_file)
-    TempEstimation_DF.to_csv(TempEstimation_file)
+    if temp_type == 'variable': TempEstimation_DF.to_csv(TempEstimation_file)
