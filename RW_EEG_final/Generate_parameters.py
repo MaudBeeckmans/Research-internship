@@ -25,10 +25,10 @@ def generate_parameters(mean = 0.1, std = 0.05, n_pp = 1):
 
 #%%
 
-seed_number = None
-nreps = 10
-N_pp = 10
-# np.random.seed(seed_number)
+seed_number = 23
+nreps = 1000
+N_pp = 200
+np.random.seed(seed_number)
 
 groups = np.array([1, 2, 3])
 LR_means = np.array([0.6, 0.7, 0.8]) # True mean LR for each group
@@ -58,5 +58,33 @@ for rep in range(nreps):
     
     true_parameters_DF.to_csv(os.path.join(param_folder, 'True_parameters_rep{}.csv'.format(rep)))
     
+#%% generate parameters for 200 pp from uniform distribution ranging from 0 upto 1
+seed_number = 24
+nreps = 100
+N_pp = 200
+participants = np.arange(0, N_pp, 1)
+np.random.seed(seed_number)
+group = 0
+Temp_mean = 0.4 # True mean Temp for all groups (constant over groups)
+Temp_std = 0.2 # # True std Temp for all groups (constant over groups)
+seed = 'seed{}'.format(seed_number)
+
+for rep in range(nreps): 
+    true_parameters_DF = pd.DataFrame(columns = ['LR_g0'
+                                                 'T_g0',  
+                                                 'Design_g0'],index = participants)
     
+    # An LR & temp folder is created that will contain the LRs and temperatures stored for all groups in 1 file 
+    param_foldername = 'True_parameters_{}pp_{}'.format(N_pp, seed)
+    param_folder = os.path.join(os.getcwd(), param_foldername)
+    if not os.path.isdir(param_folder): 
+        os.makedirs(param_folder)
+    true_parameters_DF['LR_g{}'.format(group)]= np.round(np.random.uniform(0, 1, 200), 3)
+    true_parameters_DF['T_g{}'.format(group)] = generate_parameters(mean = Temp_mean, std = Temp_std, n_pp = N_pp)
+    true_parameters_DF['Design_g{}'.format(group)]= np.random.randint(0, 10, size = N_pp)
     
+    true_parameters_DF.to_csv(os.path.join(param_folder, 'True_parameters_rep{}.csv'.format(rep)))
+    
+        
+
+
