@@ -11,12 +11,13 @@ import sys, os
 import numpy as np 
 
 # Variables that can be adapted 
-N_pp = 10 # Number of pp. used to generate the data 
-N_reps_run = 5 # Number of repetitions executed within one run of this script
+N_pp = 200 # Number of pp. used to generate the data 
+N_reps_run = 20 # Number of repetitions simuulated within one run of this script
 param_seed = 'seed23'
 
 # One run of the file = one repetition: for each gruop 200 pp and their behaviour are simulated on the task 
 groups = np.array([1, 2, 3])
+if param_seed == 'seed24': groups = np.array([0])
 participants = np.arange(0, N_pp, 1)
 
 # Deduce the subset we're currently running
@@ -64,3 +65,6 @@ for rep_number in reps:
             
         responses_file = os.path.join(responses_folder, 'responses_group{}_rep{}.csv'.format(group, rep_number))
         np.savetxt(responses_file, store_responses, fmt = '%.i', delimiter = ',') 
+
+
+
